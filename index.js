@@ -52,35 +52,38 @@ vk.updates.hear('.рыбалка', async (context) => {
   let result;
   try {
     await client.connect();
-    result = await db.findOne({id: context.senderId});
+    result = await db.findOne({ id: context.senderId });
   } catch (err) {
     console.log(err);
   } finally {
     await client.close();
   }
 
-  // const date = new Date().now/1000 - ПОЛУЧЕНИЕ ТАЙМСТАМПА
+  const date = new parseInt(Date().now)/1000;
 
-  if (a == 1) {
-      console.log("Пользователь начал рыбалку " + now)
+  if (date - result.kd >= 900) {
+
+    try {
+      await client.connect();
+      await db.updateOne({ id: context.senderId }, { $set: { "result.kd": date } });
+
       await context.send(`Вы начали рыбалку`);
-      a = 0
       setTimeout(async () => {
 
-          const fish = getFish();
-          const weightMax = getMass();
-          let weight1 = Math.random() * (weightMax - weightMin) + weightMin;
-          weight1 = Math.round(weight1 * 1000) / 1000;
-          if (fish == 'Порванный сапог') {
-              weight1 = 0.100;
-          }
-          const resultFirstSumm = sellets(weight1, fish);
-          //resultFirstSumm = "ПЕРВАЯ ПЕРЕМЕННАЯ В МОНГОДБ"
-          await context.send(`Ваш улов:\n${fish} весом ${weight1} кг.\n\n\n\n\n\n\nЕго цена ${resultFirstSumm} монет`, {});;
-          a = 1
+        const fish = getFish();
+        const weightMax = getMass();
+        let weight1 = Math.random() * (weightMax - weightMin) + weightMin;
+        weight1 = Math.round(weight1 * 1000) / 1000;
+        if (fish == 'Порванный сапог') {
+            weight1 = 0.100;
+        }
+        const resultFirstSumm = sellets(weight1, fish);
+        //resultFirstSumm = "ПЕРВАЯ ПЕРЕМЕННАЯ В МОНГОДБ"
+        await context.send(`Ваш улов:\n${fish} весом ${weight1} кг.\n\n\n\n\n\n\nЕго цена ${resultFirstSumm} монет`, {});;
       }, 9000)
-  } else {
-      await context.send(`Вы должны дождаться предыдущей поклевки`);
+    } finally {
+      await client.close();
+    }
   }
 });
 
