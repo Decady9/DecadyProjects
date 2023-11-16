@@ -26,8 +26,10 @@ vk.updates.on('message', async (context, next) => {
   if (context.isGroup) return;
   try {
     await client.connect();
-    const result = db.findOne({id: context.senderId});
-    if (result === null) await db.insertOne({ "id": context.senderId, "balance_real": 0, "balance_fake": 0, kd: 0 });
+    const result = await db.findOne({id: context.senderId});
+    if (result === null) {
+      await db.insertOne({ "id": context.senderId, "balance_real": 0, "balance_fake": 0, "kd": 0, "stats": { "torn_boots": 0, "fish": 0 } });
+    }
   } catch (err) {
     await context.reply("Ошибка в базе данных, напишиье админу а");
     console.log(err);
@@ -48,42 +50,45 @@ vk.updates.hear('.другое', (context) => {
 
 
 vk.updates.hear('.рыбалка', async (context) => {
-
   let result;
+
   try {
     await client.connect();
     result = await db.findOne({ id: context.senderId });
+
+    let date = Math.floor(Date.now() / 1000);
+    console.log(date, result.kd);
+  
+    if (date - result.kd >= 900) {
+  
+      try {
+        await client.connect();
+        await db.updateOne({ id: context.senderId }, { $set: { "kd": date } });
+  
+        await context.send(`Вы начали рыбалку`);
+        setTimeout(async () => {
+  
+          const fish = getFish();
+          const weightMax = getMass();
+          let weight1 = Math.random() * (weightMax - weightMin) + weightMin;
+          weight1 = Math.round(weight1 * 1000) / 1000;
+          if (fish == 'Порванный сапог') {
+              weight1 = 0.100;
+          }
+          const resultFirstSumm = sellets(weight1, fish);
+          //resultFirstSumm = "ПЕРВАЯ ПЕРЕМЕННАЯ В МОНГОДБ"
+          await context.send(`Ваш улов:\n${fish} весом ${weight1} кг.\n\n\n\n\n\n\nЕго цена ${resultFirstSumm} монет`, {});;
+        }, 9000)
+      } finally {
+        await client.close();
+      }
+    } else {
+      await context.send(`Рано стартуешь, жди ещё ${900 - (date - result.kd)} секунд`);
+    }
   } catch (err) {
     console.log(err);
   } finally {
     await client.close();
-  }
-
-  const date = new parseInt(Date().now)/1000;
-
-  if (date - result.kd >= 900) {
-
-    try {
-      await client.connect();
-      await db.updateOne({ id: context.senderId }, { $set: { "result.kd": date } });
-
-      await context.send(`Вы начали рыбалку`);
-      setTimeout(async () => {
-
-        const fish = getFish();
-        const weightMax = getMass();
-        let weight1 = Math.random() * (weightMax - weightMin) + weightMin;
-        weight1 = Math.round(weight1 * 1000) / 1000;
-        if (fish == 'Порванный сапог') {
-            weight1 = 0.100;
-        }
-        const resultFirstSumm = sellets(weight1, fish);
-        //resultFirstSumm = "ПЕРВАЯ ПЕРЕМЕННАЯ В МОНГОДБ"
-        await context.send(`Ваш улов:\n${fish} весом ${weight1} кг.\n\n\n\n\n\n\nЕго цена ${resultFirstSumm} монет`, {});;
-      }, 9000)
-    } finally {
-      await client.close();
-    }
   }
 });
 
@@ -141,7 +146,3 @@ function sellets(weight1, fish) {
   let firstSumm = Math.round(weight1 * coefficient * 1000);
   return firstSumm
 }
-
-
-// Авторизация и запуск бота
-vk.updates.start().catch(console.error)
