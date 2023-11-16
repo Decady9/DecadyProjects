@@ -59,7 +59,7 @@ vk.updates.hear('.рыбалка', async (context) => {
     let date = Math.floor(Date.now() / 1000);
     console.log(date, result.kd);
   
-    if (date - result.kd >= 900) {
+    if (date - result.kd >= 15 /* КД на рыбалку */) {
   
       try {
         await client.connect();
