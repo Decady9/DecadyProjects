@@ -26,13 +26,15 @@ vk.updates.on('message', async (context, next) => {
   if (context.isGroup) return;
   try {
     await client.connect();
-    await db.insertOne({ "id": context.senderId, "balance_real": 0, "balance_fake": 0, kd: 0 });
+    const result = db.findOne({id: context.senderId});
+    if (result === null) await db.insertOne({ "id": context.senderId, "balance_real": 0, "balance_fake": 0, kd: 0 });
   } catch (err) {
     await context.reply("Ошибка в базе данных, напишиье админу а");
     console.log(err);
   } finally {
     await client.close();
   }
+  await next();
 })
 
 vk.updates.hear('.продать всю рыбу', (context) => {
@@ -45,12 +47,25 @@ vk.updates.hear('.другое', (context) => {
 
 
 
-vk.updates.hear('.рыбалка', (context) => {
+vk.updates.hear('.рыбалка', async (context) => {
+
+  let result;
+  try {
+    await client.connect();
+    result = await db.findOne({id: context.senderId});
+  } catch (err) {
+    console.log(err);
+  } finally {
+    await client.close();
+  }
+
+  // const date = new Date().now/1000 - ПОЛУЧЕНИЕ ТАЙМСТАМПА
+
   if (a == 1) {
       console.log("Пользователь начал рыбалку " + now)
-      context.send(`Вы начали рыбалку`);
+      await context.send(`Вы начали рыбалку`);
       a = 0
-      setTimeout(() => {
+      setTimeout(async () => {
 
           const fish = getFish();
           const weightMax = getMass();
@@ -61,11 +76,11 @@ vk.updates.hear('.рыбалка', (context) => {
           }
           const resultFirstSumm = sellets(weight1, fish);
           //resultFirstSumm = "ПЕРВАЯ ПЕРЕМЕННАЯ В МОНГОДБ"
-          context.send(`Ваш улов:\n${fish} весом ${weight1} кг.\n\n\n\n\n\n\nЕго цена ${resultFirstSumm} монет`, {});;
+          await context.send(`Ваш улов:\n${fish} весом ${weight1} кг.\n\n\n\n\n\n\nЕго цена ${resultFirstSumm} монет`, {});;
           a = 1
       }, 9000)
   } else {
-      context.send(`Вы должны дождаться предыдущей поклевки`);
+      await context.send(`Вы должны дождаться предыдущей поклевки`);
   }
 });
 
