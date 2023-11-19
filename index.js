@@ -4,6 +4,7 @@ import fs from 'fs';
 
 
 // Переменные
+let timeFish = 20;
 let weightMin = 0.123
 let now = new Date();
 const cfg = JSON.parse(fs.readFileSync('./config.json'));
@@ -19,9 +20,23 @@ const weightMax = [0.500, 1.000, 2.000, 3.000, 7.200, 10.000]
 //стартовая отладка
 vk.updates.start().then(() => {
   console.log("Бот Запущен " + now);
+  
+}); 
+vk.updates.hear('.другое', async (context) => {
+  try {
+    await client.connect()
+    const b = await db.findOne();
+    await db.updateOne({count: b.count}, { $inc: { count: 1 } });
+    await context.send(`За всё время было выловлено ${b.count} рыбов `)
+   } 
+   finally {
+    await client.close();
+   }
 });
 
-//БАЗОВЫЕ ОТВЕТЫ НА СООБЩЕНИЯ
+//БАЗОВЫЕ ОТВЕТЫ НА СООБЩЕНИЯ\
+
+//____
 vk.updates.on('message', async (context, next) => {
   if (context.isGroup) return;
   try {
@@ -38,14 +53,12 @@ vk.updates.on('message', async (context, next) => {
   }
   await next();
 })
-
+//____
 vk.updates.hear('.продать всю рыбу', (context) => {
-  context.send("В разработке....")
+  context.send("В разработке")
 
 });
-vk.updates.hear('.другое', (context) => {
-  context.send("В разработке....")
-});
+
 
 
 
@@ -59,7 +72,7 @@ vk.updates.hear('.рыбалка', async (context) => {
     let date = Math.floor(Date.now() / 1000);
     console.log(date, result.kd);
   
-    if (date - result.kd >= 15 /* КД на рыбалку */) {
+    if (date - result.kd >= timeFish/* КД на рыбалку */) {
   
       try {
         await client.connect();
@@ -72,18 +85,26 @@ vk.updates.hear('.рыбалка', async (context) => {
           const weightMax = getMass();
           let weight1 = Math.random() * (weightMax - weightMin) + weightMin;
           weight1 = Math.round(weight1 * 1000) / 1000;
+          try {
+            await client.connect()
+            const b = await db.findOne();
+            await db.updateOne({count: b.count}, { $inc: { count: 1 } });
+           } 
+           finally {
+            await client.close();
+           }
           if (fish == 'Порванный сапог') {
               weight1 = 0.100;
           }
           const resultFirstSumm = sellets(weight1, fish);
           //resultFirstSumm = "ПЕРВАЯ ПЕРЕМЕННАЯ В МОНГОДБ"
-          await context.send(`Ваш улов:\n${fish} весом ${weight1} кг.\n\n\n\n\n\n\nЕго цена ${resultFirstSumm} монет`, {});;
-        }, 9000)
+          await context.send(`Ваш улов:\n${fish} весом ${weight1} кг.\nЕго цена ${resultFirstSumm} монет`, {});;
+        }, 19750)
       } finally {
         await client.close();
       }
     } else {
-      await context.send(`Рано стартуешь, жди ещё ${900 - (date - result.kd)} секунд`);
+      await context.send(`Рано стартуешь, жди ещё ${timeFish- (date - result.kd)} секунд`);
     }
   } catch (err) {
     console.log(err);
@@ -120,7 +141,7 @@ function getMass() {
   } else if (randomNumberTwo <= 11) {
       return weightMax[3]; // Выполняем с шансом 10% максимальная масса 3 кг
   } else if (randomNumberTwo <= 26) {
-      return weightMax[2]; // Выполняем с шансом 15% максимальная масса 2кг
+      return weightMax[2]; // Выполняем с шансом 15% максимальная масса 2кг 
   } else if (randomNumberTwo <= 31) {
       return weightMax[4]; // Выполняем с шансом 5% максимальная масска 7.2кг
   } else {
